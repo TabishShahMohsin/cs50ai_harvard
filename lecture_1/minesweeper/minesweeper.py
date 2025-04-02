@@ -105,30 +105,34 @@ class Sentence():
         """
         Returns the set of all cells in self.cells known to be mines.
         """
-        return_set = set() 
-        for i in self.cells():
-            if i in 
-        raise NotImplementedError
+        if self.count == len(self.cells):
+            return self.cells
+        return set()
 
     def known_safes(self):
         """
         Returns the set of all cells in self.cells known to be safe.
         """
-        raise NotImplementedError
+        if self.count == 0:
+            return self.cells
+        return set()
 
     def mark_mine(self, cell):
         """
         Updates internal knowledge representation given the fact that
         a cell is known to be a mine.
         """
-        raise NotImplementedError
+        if cell in self.cells:
+            self.count -= 1
+            self.cells.remove(cell)
 
     def mark_safe(self, cell):
         """
         Updates internal knowledge representation given the fact that
         a cell is known to be safe.
         """
-        raise NotImplementedError
+        if cell in self.cells:
+            self.cells.remove(cell)
 
 
 class MinesweeperAI():
@@ -185,7 +189,55 @@ class MinesweeperAI():
             5) add any new sentences to the AI's knowledge base
                if they can be inferred from existing knowledge
         """
-        raise NotImplementedError
+        self.moves_made.add(cell)
+
+        self.mark_safe(cell)
+
+        cells = set()
+        for i in range(cell[0] - 1, cell[0] + 2):
+            for j in range(cell[1] - 1, cell[1] + 2):
+
+                # Ignore the cell itself
+                if (i, j) == cell:
+                    continue
+
+                # Update count if cell in bounds and is mine
+                if 0 <= i < self.height and 0 <= j < self.width:
+                    if (i, j) in self.mines:
+                        count -= 1
+                        continue
+                    elif (i, j) in self.safes:
+                        continue
+                    cells.add((i, j))
+        self.knowledge.append(Sentence(cells, count))
+
+        change = True
+        while change:
+            change = False
+            for sentence in self.knowledge:
+                for i in sentence.known_mines():
+                    self.mark_mine(i)
+                    change = True
+                    break
+                for i in sentence.known_safes():
+                    self.mark_safe(i)
+                    change = True
+                    break
+                if change:
+                    break
+            if change:
+                continue
+            
+            for sent1 in self.knowledge:
+                for sent2 in self.knowledge:
+                    if sent1.cells < sent2.cells and sent1.count > 0:
+                        self.knowledge.append(
+                            Sentence(sent2.cells-sent1.cells, sent2.count-sent1.count))
+                        self.knowledge.remove(sent2)
+                        change = True
+                        break
+                if change:
+                    break
 
     def make_safe_move(self):
         """
@@ -196,7 +248,10 @@ class MinesweeperAI():
         This function may use the knowledge in self.mines, self.safes
         and self.moves_made, but should not modify any of those values.
         """
-        raise NotImplementedError
+        possible_moves = self.safes - self.moves_made
+        if len(possible_moves) == 0:
+            return None
+        return random.choice(list(possible_moves))
 
     def make_random_move(self):
         """
@@ -205,4 +260,11 @@ class MinesweeperAI():
             1) have not already been chosen, and
             2) are not known to be mines
         """
-        raise NotImplementedError
+        all_moves = set()
+        for i in range(self.height):
+            for j in range(self.width):
+                all_moves.add((i, j))
+        possible_moves = (all_moves - self.moves_made) - self.mines
+        if len(possible_moves) == 0:
+            return None
+        return random.choice(list(possible_moves))

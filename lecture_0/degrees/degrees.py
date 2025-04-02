@@ -93,35 +93,40 @@ def shortest_path(source, target):
 
     If no possible path, returns None.
     """
-    
-    frontier = QueueFrontier()
+    # Queue frontier for optimum solution
+    frontier = QueueFrontier() 
     frontier.add(Node(source, None, None))
 
+    # For corner-cases
     if source == target:
-        return list()
+        return list()  
 
     frontier.explored = set()
 
     while True:
         if frontier.empty():
-            return None
+            return None  # No solution found
         
-        node = frontier.remove()
+        node = frontier.remove()  # Get the element in the way of the chosen stack
         frontier.explored.add(node.state)
 
         for mov_id, prs_id in neighbors_for_person(node.state):
-                if prs_id == target:
-                    actions = []
-                    actions.append((mov_id, prs_id))
 
-                    while node.parent is not None:
-                        actions.append((node.action, node.state))
-                        node = node.parent
+            # Backtracking if reched the target
+            if prs_id == target:
+                actions = []
+                actions.append((mov_id, prs_id))
+
+                while node.parent is not None:
+                    actions.append((node.action, node.state))
+                    node = node.parent
                     
-                    actions.reverse()
-                    return  actions 
-                if not frontier.contains_state(prs_id) and prs_id not in frontier.explored:
-                    frontier.add(Node(prs_id, node, mov_id))
+                actions.reverse()
+                return actions 
+
+            # If person not in frontier, expantion for him
+            if not frontier.contains_state(prs_id) and prs_id not in frontier.explored:
+                frontier.add(Node(prs_id, node, mov_id))
 
 
 def person_id_for_name(name):
