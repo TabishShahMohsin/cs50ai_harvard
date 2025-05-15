@@ -101,7 +101,12 @@ class NimAI():
         Return the Q-value for the state `state` and the action `action`.
         If no Q-value exists yet in `self.q`, return 0.
         """
-        raise NotImplementedError
+        move = (tuple(state), action)
+        if move in self.q:
+            q_value = self.q[move]
+        else:
+            q_value = 0
+        return q_value
 
     def update_q_value(self, state, action, old_q, reward, future_rewards):
         """
@@ -118,7 +123,7 @@ class NimAI():
         `alpha` is the learning rate, and `new value estimate`
         is the sum of the current reward and estimated future rewards.
         """
-        raise NotImplementedError
+        self.q[tuple(state), action] = old_q + self.alpha * (reward + future_rewards - old_q)
 
     def best_future_reward(self, state):
         """
@@ -130,7 +135,21 @@ class NimAI():
         Q-value in `self.q`. If there are no available actions in
         `state`, return 0.
         """
-        raise NotImplementedError
+        # All possible actions
+        actions = Nim.available_actions(state)
+        # No possible actions
+        if len(actions) == 0:
+            return 0
+
+        # Getting the max value of q, while taking q=0 for action not assigned a q value yet 
+        max_q = 0
+        for action in actions:
+            if (tuple(state), action) in self.q:
+                value = self.q[tuple(state), action]
+            else:
+                value = 0
+            max_q = max(max_q, value)
+        return max_q
 
     def choose_action(self, state, epsilon=True):
         """
@@ -147,7 +166,29 @@ class NimAI():
         If multiple actions have the same Q-value, any of those
         options is an acceptable return value.
         """
-        raise NotImplementedError
+        # Should remember that the dict only supports hashable, self.q has state as a tuple but state in the program is a list
+        # For greedy part:
+        if epsilon == False:
+            max_q = 0
+            actions = list(Nim.available_actions(state))
+            best_action = actions[0]
+            for action in actions:
+                if (tuple(state), action) in self.q:
+                    value = self.q[tuple(state), action]
+                else:
+                    value = 0
+                if max_q <= value:
+                    max_q = value
+                    best_action = action
+            return tuple(best_action)
+
+        # For greedy part of epsilon - greedy
+        if random.choices([True, False], weights=[self.epsilon, 1 - self.epsilon])[0]:
+            return self.choose_action(state, False)
+        
+        # For random part of epsilon - greedy
+        actions = list(Nim.available_actions(state))
+        return random.choice(actions)
 
 
 def train(n):

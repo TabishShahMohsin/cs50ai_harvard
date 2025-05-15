@@ -59,7 +59,45 @@ def load_data(filename):
     labels should be the corresponding list of labels, where each label
     is 1 if Revenue is true, and 0 otherwise.
     """
-    raise NotImplementedError
+    # Need month to int encoding
+    months = {
+        "Jan": 0,
+        "Feb": 1,
+        "Mar": 2,
+        "Apr": 3,
+        "May": 4,
+        "June": 5,
+        "Jul": 6,
+        "Aug": 7,
+        "Sep": 8,
+        "Oct": 9,
+        "Nov": 10,
+        "Dec": 11,
+    }
+    # X is a matrix and y is an array
+    X = list()
+    y = list()
+
+    with open(filename) as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            # Need to hard - code every field in the specific order of what is provided
+            x = list()
+            y.append(1 if row["Revenue"] == "TRUE" else 0)
+            x.append(int(row["Administrative"]))
+            x.append(float(row["Administrative_Duration"]))
+            x.append(int(row["Informational"]))
+            x.append(float(row["Informational_Duration"]))
+            x.append(int(row["ProductRelated"]))
+            for field in ["ProductRelated_Duration", "BounceRates", "ExitRates", "PageValues", "SpecialDay"]:
+                x.append(float(row[field]))
+            x.append(months[row["Month"]])
+            for field in ["OperatingSystems", "Browser", "Region", "TrafficType"]:
+                x.append(int(row[field]))
+            x.append(1 if row["VisitorType"] == "Returning_Visitor" else 0)
+            x.append(1 if row["Weekend"] == "TRUE" else 0)
+            X.append(x)
+    return X, y
 
 
 def train_model(evidence, labels):
@@ -67,7 +105,10 @@ def train_model(evidence, labels):
     Given a list of evidence lists and a list of labels, return a
     fitted k-nearest neighbor model (k=1) trained on the data.
     """
-    raise NotImplementedError
+    # Using the builtin classifier in scikit - learn
+    neigh = KNeighborsClassifier(n_neighbors=1)
+    neigh.fit(evidence, labels)
+    return neigh
 
 
 def evaluate(labels, predictions):
@@ -85,7 +126,23 @@ def evaluate(labels, predictions):
     representing the "true negative rate": the proportion of
     actual negative labels that were accurately identified.
     """
-    raise NotImplementedError
+    # Storing the counts total_neg = 12000 - total_pos
+    total_pos = 0
+    corr_pos = 0
+    corr_neg = 0
+
+    # Iterating through each and every correct label and seeing if it matches or not
+    for i in range(len(labels)):
+        if labels[i] == 1:
+            total_pos += 1
+            if predictions[i] == 1:
+                corr_pos += 1
+            continue
+        if predictions[i] == 0:
+            corr_neg += 1
+
+    total_neg = len(labels) - total_pos
+    return corr_pos / total_pos, corr_neg / total_neg
 
 
 if __name__ == "__main__":

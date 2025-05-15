@@ -57,7 +57,22 @@ def transition_model(corpus, page, damping_factor):
     linked to by `page`. With probability `1 - damping_factor`, choose
     a link at random chosen from all pages in the corpus.
     """
-    raise NotImplementedError
+
+    transition_dict = dict()
+
+    if not corpus[page]:
+        for page_in_corpus in corpus:
+            transition_dict[page_in_corpus] = (1/len(corpus))
+        return transition_dict
+
+    for linked_page in corpus[page]:
+        transition_dict[linked_page] = damping_factor / len(corpus[page]) + (1 - damping_factor) / len(corpus)
+
+    for other_page in corpus:
+        if other_page not in transition_dict:
+            transition_dict[other_page] = (1 - damping_factor) / len(corpus)
+
+    return transition_dict
 
 
 def sample_pagerank(corpus, damping_factor, n):
@@ -69,7 +84,23 @@ def sample_pagerank(corpus, damping_factor, n):
     their estimated PageRank value (a value between 0 and 1). All
     PageRank values should sum to 1.
     """
-    raise NotImplementedError
+    page_rank = dict()
+    for i in corpus:
+        page_rank[i] = 0
+
+    page = random.choice(list(corpus.keys()))
+    page_rank[page] = 1
+    for i in range(n-1):
+        trans_model = transition_model(corpus, page, damping_factor)
+        page = random.choices(list(trans_model.keys()), weights=list(trans_model.values()), k=1)[0]
+        page_rank[page] += 1
+
+    total = sum(page_rank.values())
+
+    for i in page_rank:
+        page_rank[i] /= total
+
+    return page_rank
 
 
 def iterate_pagerank(corpus, damping_factor):
@@ -81,7 +112,35 @@ def iterate_pagerank(corpus, damping_factor):
     their estimated PageRank value (a value between 0 and 1). All
     PageRank values should sum to 1.
     """
-    raise NotImplementedError
+    def over_margin(before_page_rank, after_page_rank, factor):
+        error = 0
+        for i in before_page_rank:
+            error = max(error, abs(before_page_rank[i] - after_page_rank[i]))
+        if error > factor:
+            return True
+        return False
+
+    pagerank = dict()
+    for i in corpus:
+        pagerank[i] = 1/len(corpus)
+
+    import copy
+    _pagerank = copy.deepcopy(pagerank)
+    while True:
+        pagerank = copy.deepcopy(_pagerank)
+        pr = (1 - damping_factor) / len(corpus)
+        for i in corpus:
+            _term = 0
+            for j in corpus:
+                if len(corpus[j]) == 0:
+                    _term += pagerank[j] / len(corpus)
+                elif i in corpus[j]:
+                    _term += pagerank[j] / len(corpus[j])
+            _pagerank[i] = pr + damping_factor * _term
+        if not over_margin(pagerank, _pagerank, 0.001):
+            break
+            
+    return pagerank
 
 
 if __name__ == "__main__":
